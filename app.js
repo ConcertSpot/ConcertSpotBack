@@ -2,52 +2,20 @@
 
 const express = require("express");
 const cors = require("cors");
-const axios = require("axios");
-const { parseString } = require("xml2js");
-require("dotenv").config();
-
+const dotenv = require("dotenv");
+const kopisAPI = require('./controllers/kopisAPI');
 const app = express();
 const port = 8000;
 
-// CORS 설정
-app.use(cors());
+dotenv.config(); // 환경 변수 로드
+
+app.use(cors());  // CORS 설정을 모든 라우터 앞에 두기
+app.use(express.json()); // JSON 파싱 미들웨어 설정
+
+app.use('/', kopisAPI); // kopisAPI 라우터 설정
 
 app.get("/", (req, res) => {
   res.send("서버 가동 성공");
-});
-
-app.get("/performances", async (req, res) => {
-  const serviceKey = process.env.SERVICE_KEY; // 환경 변수에서 서비스 키 가져오기
-  const apiUrl = `http://www.kopis.or.kr/openApi/restful/pblprfr`;
-
-  const params = {
-    service: serviceKey,
-    stdate: "20240703",
-    eddate: "20240703",
-    cpage: "1",
-    rows: "10",
-    shcate: "CCCD",
-  };
-
-  try {
-    const response = await axios.get(apiUrl, { params });
-
-    // XML을 JSON으로 변환
-    parseString(response.data, (err, result) => {
-      if (err) {
-        console.error("XML 파싱 에러:", err);
-        res.status(500).json({ error: "XML 파싱 에러" });
-      } else {
-        console.log(result); // 변환된 JSON 로그 출력
-        res.json(result); // 클라이언트에게 JSON 데이터 반환
-      }
-    });
-  } 
-  
-  catch (error) {
-    console.error("API 호출 중 에러:", error);
-    res.status(500).json({ error: "API 호출 중 에러 발생" });
-  }
 });
 
 app.listen(port, () => {
