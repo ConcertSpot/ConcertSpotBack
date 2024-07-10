@@ -82,13 +82,72 @@ router.post('/submitCode', async (req, res) => {
     const response = await axios.get(apiUrl, { params });
     console.log("API Response:", response.data);
 
-    parseString(response.data, (err, result) => {
+    parseString(response.data, async (err, result) => {
       if (err) {
         console.error("XML Parsing Error:", err);
         res.status(500).json({ error: "XML Parsing Error" });
       } else {
         console.log("Parsed Result:", result);
-        res.json(result); // Send parsed result to frontend
+
+        // mt20id 추출
+        const performances = result.dbs.db;
+        const mt20ids = performances.map(performance => performance.mt20id[0]);
+        console.log("mt20ids:", mt20ids);
+
+        // 각 mt20id에 대해 상세 정보 요청
+        const detailedInfoPromises = mt20ids.map(mt20id => {
+          const detailApiUrl = `http://kopis.or.kr/openApi/restful/pblprfr/${mt20id}`;
+          return axios.get(detailApiUrl, { params: { service: serviceKey } });
+        });
+
+        try {
+          const detailedInfos = await Promise.all(detailedInfoPromises);
+
+          // XML to JSON 변환
+          const detailedResults = await Promise.all(detailedInfos.map(info => {
+            return new Promise((resolve, reject) => {
+              parseString(info.data, (err, result) => {
+                if (err) reject(err);
+                else resolve(result);
+              });
+            });
+          }));
+
+          console.log("Detailed Results:", detailedResults);
+
+          // 각 상세 정보에서 mt10id 추출 및 콘솔 출력
+          const mt10ids = detailedResults.map(detail => detail.dbs.db[0].mt10id[0]);
+          console.log("mt10ids:", mt10ids);
+
+          // 각 mt10id에 대해 장소 정보 요청
+          const placeInfoPromises = mt10ids.map(mt10id => {
+            const placeApiUrl = `http://kopis.or.kr/openApi/restful/prfplc/${mt10id}`;
+            return axios.get(placeApiUrl, { params: { service: serviceKey } });
+          });
+
+          try {
+            const placeInfos = await Promise.all(placeInfoPromises);
+
+            // XML to JSON 변환
+            const placeResults = await Promise.all(placeInfos.map(info => {
+              return new Promise((resolve, reject) => {
+                parseString(info.data, (err, result) => {
+                  if (err) reject(err);
+                  else resolve(result);
+                });
+              });
+            }));
+
+            console.log("Place Results:", placeResults);
+            res.json(placeResults); // Send place results to frontend
+          } catch (error) {
+            console.error("Error fetching place info:", error);
+            res.status(500).json({ error: "Error fetching place info" });
+          }
+        } catch (error) {
+          console.error("Error fetching detailed info:", error);
+          res.status(500).json({ error: "Error fetching detailed info" });
+        }
       }
     });
   } catch (error) {
@@ -96,7 +155,5 @@ router.post('/submitCode', async (req, res) => {
     res.status(500).json({ error: "API Call Error" });
   }
 });
-
-router.get('/sibal')
 
 module.exports = router;
