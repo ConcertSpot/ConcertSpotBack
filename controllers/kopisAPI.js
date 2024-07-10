@@ -60,4 +60,43 @@ router.get("/performances", async (req, res) => {
   }
 });
 
+router.post('/submitCode', async (req, res) => {
+  const serviceKey = process.env.SERVICE_KEY;
+  const apiUrl = `http://kopis.or.kr/openApi/restful/pblprfr`;
+  const stdate = getTodayDate();
+  const eddate = getEndDate();
+  const { code } = req.body;
+  console.log("Received administrative code:", code);
+
+  const params = {
+    service: serviceKey,
+    ststype: "dayWeek",
+    stdate: stdate,
+    eddate: eddate,
+    cpage: "1",
+    rows: "30",
+    signgucodesub: code,  // Received code from the request
+  };
+
+  try {
+    const response = await axios.get(apiUrl, { params });
+    console.log("API Response:", response.data);
+
+    parseString(response.data, (err, result) => {
+      if (err) {
+        console.error("XML Parsing Error:", err);
+        res.status(500).json({ error: "XML Parsing Error" });
+      } else {
+        console.log("Parsed Result:", result);
+        res.json(result); // Send parsed result to frontend
+      }
+    });
+  } catch (error) {
+    console.error("API Call Error:", error);
+    res.status(500).json({ error: "API Call Error" });
+  }
+});
+
+router.get('/sibal')
+
 module.exports = router;
