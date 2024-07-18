@@ -139,7 +139,18 @@ router.post('/submitCode', async (req, res) => {
             }));
 
             console.log("Place Results:", placeResults);
-            res.json(placeResults); // Send place results to frontend
+
+            // 결과를 하나의 배열로 결합
+            const combinedResults = performances.map((performance, index) => {
+              return {
+                performance: performance,
+                detail: detailedResults[index],
+                place: placeResults[index]
+              };
+            });
+
+            console.log("Combined Results:", combinedResults);
+            res.json(combinedResults); // 클라이언트에게 결합된 데이터 반환
           } catch (error) {
             console.error("Error fetching place info:", error);
             res.status(500).json({ error: "Error fetching place info" });
