@@ -39,6 +39,7 @@ router.get("/performances", async (req, res) => {
     cpage: "1",
     rows: "30",
     shcate: "EEEA",
+    newsql: 'Y' // 신규 API 여부 추가
   };
 
   try {
@@ -76,6 +77,7 @@ router.post('/submitCode', async (req, res) => {
     cpage: "1",
     rows: "30",
     signgucodesub: code,  // Received code from the request
+    newsql: 'Y' // 신규 API 여부 추가
   };
 
   try {
@@ -97,7 +99,7 @@ router.post('/submitCode', async (req, res) => {
         // 각 mt20id에 대해 상세 정보 요청
         const detailedInfoPromises = mt20ids.map(mt20id => {
           const detailApiUrl = `http://kopis.or.kr/openApi/restful/pblprfr/${mt20id}`;
-          return axios.get(detailApiUrl, { params: { service: serviceKey } });
+          return axios.get(detailApiUrl, { params: { service: serviceKey, newsql: 'Y' } });
         });
 
         try {
@@ -122,7 +124,7 @@ router.post('/submitCode', async (req, res) => {
           // 각 mt10id에 대해 장소 정보 요청
           const placeInfoPromises = mt10ids.map(mt10id => {
             const placeApiUrl = `http://kopis.or.kr/openApi/restful/prfplc/${mt10id}`;
-            return axios.get(placeApiUrl, { params: { service: serviceKey } });
+            return axios.get(placeApiUrl, { params: { service: serviceKey, newsql: 'Y' } });
           });
 
           try {
