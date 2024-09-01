@@ -39,6 +39,7 @@ router.get("/performances", async (req, res) => {
     cpage: "1",
     rows: "30",
     shcate: "EEEA",
+    newsql: 'Y' // 신규 API 여부 추가
   };
 
   try {
@@ -76,6 +77,7 @@ router.post('/submitCode', async (req, res) => {
     cpage: "1",
     rows: "30",
     signgucodesub: code,  // Received code from the request
+    newsql: 'Y' // 신규 API 여부 추가
   };
 
   try {
@@ -97,7 +99,7 @@ router.post('/submitCode', async (req, res) => {
         // 각 mt20id에 대해 상세 정보 요청
         const detailedInfoPromises = mt20ids.map(mt20id => {
           const detailApiUrl = `http://kopis.or.kr/openApi/restful/pblprfr/${mt20id}`;
-          return axios.get(detailApiUrl, { params: { service: serviceKey } });
+          return axios.get(detailApiUrl, { params: { service: serviceKey, newsql: 'Y' } });
         });
 
         try {
@@ -122,7 +124,7 @@ router.post('/submitCode', async (req, res) => {
           // 각 mt10id에 대해 장소 정보 요청
           const placeInfoPromises = mt10ids.map(mt10id => {
             const placeApiUrl = `http://kopis.or.kr/openApi/restful/prfplc/${mt10id}`;
-            return axios.get(placeApiUrl, { params: { service: serviceKey } });
+            return axios.get(placeApiUrl, { params: { service: serviceKey, newsql: 'Y' } });
           });
 
           try {
@@ -139,7 +141,18 @@ router.post('/submitCode', async (req, res) => {
             }));
 
             console.log("Place Results:", placeResults);
-            res.json(placeResults); // Send place results to frontend
+
+            // 결과를 하나의 배열로 결합
+            const combinedResults = performances.map((performance, index) => {
+              return {
+                performance: performance,
+                detail: detailedResults[index],
+                place: placeResults[index]
+              };
+            });
+
+            console.log("Combined Results:", combinedResults);
+            res.json(combinedResults); // 클라이언트에게 결합된 데이터 반환
           } catch (error) {
             console.error("Error fetching place info:", error);
             res.status(500).json({ error: "Error fetching place info" });
